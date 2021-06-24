@@ -5,6 +5,7 @@ import (
 	"flag"
 	"fmt"
 	"log"
+	"os"
 	"strings"
 
 	"github.com/gocolly/colly"
@@ -15,7 +16,7 @@ type Movie struct {
 	Year  string
 }
 
-type Celebrity struct {
+type Profile struct {
 	Name      string
 	Photo     string
 	JobTitle  string
@@ -32,7 +33,7 @@ func main() {
 	if *month == 0 || *day == 0 {
 		fmt.Println("Not enough arguments provided. Usage:")
 		flag.PrintDefaults()
-		return
+		os.Exit(1)
 	}
 
 	fmt.Printf("Fetching birthdays for Day: %d, Month: %d\n", *month, *day)
@@ -70,26 +71,26 @@ func crawl(month int, day int) {
 	})
 
 	infoCollector.OnHTML("#content-2-wide", func(element *colly.HTMLElement) {
-		celeb := Celebrity{}
-		celeb.Name = element.ChildText("h1.header > span.itemprop")
-		celeb.Photo = element.ChildAttr("#name-poster", "src")
-		celeb.JobTitle = element.ChildText("#name-job-categories > a > span.itemprop")
-		celeb.BirthDate = element.ChildAttr("#name-born-info time", "datetime")
-		celeb.Bio = strings.TrimSpace(element.ChildText("#name-bio-text > div.name-trivia-bio-text > div.inline"))
+		profile := Profile{}
+		profile.Name = element.ChildText("h1.header > span.itemprop")
+		profile.Photo = element.ChildAttr("#name-poster", "src")
+		profile.JobTitle = element.ChildText("#name-job-categories > a > span.itemprop")
+		profile.BirthDate = element.ChildAttr("#name-born-info time", "datetime")
+		profile.Bio = strings.TrimSpace(element.ChildText("#name-bio-text > div.name-trivia-bio-text > div.inline"))
 
 		element.ForEach("div.knownfor-title", func(_ int, knownForElem *colly.HTMLElement) {
 			movie := Movie{}
 			movie.Title = knownForElem.ChildText("div.knownfor-title-role > a.knownfor-ellipsis")
 			movie.Year = knownForElem.ChildText("div.knownfor-year > span.knownfor-ellipsis")
 
-			celeb.TopMovies = append(celeb.TopMovies, movie)
+			profile.TopMovies = append(profile.TopMovies, movie)
 		})
 
-		celebJson, err := json.MarshalIndent(celeb, "", "    ")
+		profileJson, err := json.MarshalIndent(profile, "", "    ")
 		if err != nil {
 			log.Fatal(err)
 		}
-		fmt.Println(string(celebJson))
+		fmt.Println(string(profileJson))
 	})
 
 	birthdayUrl := fmt.Sprintf("https://www.imdb.com/search/name/?birth_monthday=%d-%d", month, day)
