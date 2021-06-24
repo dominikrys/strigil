@@ -7,6 +7,7 @@ import (
 	"log"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/gocolly/colly"
 )
@@ -28,6 +29,7 @@ type Profile struct {
 func main() {
 	month := flag.Int("month", 0, "Month to fetch birthdays for")
 	day := flag.Int("day", 0, "Day to fetch birthdays for")
+	profileNo := flag.Int("profileNo", 5, "(Optional) Amount of profiles to fetch")
 	flag.Parse()
 
 	if *month == 0 || *day == 0 {
@@ -36,40 +38,46 @@ func main() {
 		os.Exit(1)
 	}
 
-	fmt.Printf("Fetching birthdays for Day: %d, Month: %d\n", *month, *day)
+	fmt.Printf("Fetching %d profiles for people born on Day: %d, Month: %d\n", *profileNo, *day, *month)
 
-	crawl(*month, *day)
+	crawl(*month, *day, *profileNo)
 }
 
-func crawl(month int, day int) {
-	// TODO: add result limit
+func crawl(month int, day int, profileNo int) {
+	profilesCrawled := 0
 
-	collector := colly.NewCollector(
+	defer func() {
+		if r := recover(); r != nil {
+			fmt.Printf("Successfully crawled %d profiles. Exiting.\n", profilesCrawled)
+		}
+	}()
+
+	mainCollector := colly.NewCollector(
 		colly.AllowedDomains("imdb.com", "www.imdb.com"),
-		//colly.Async(true),
 	)
-
-	infoCollector := collector.Clone()
-
-	collector.OnRequest(func(request *colly.Request) {
-		fmt.Println("Visiting: ", request.URL.String())
+	mainCollector.Limit(&colly.LimitRule{
+		Delay:       50 * time.Millisecond,
+		RandomDelay: 25 * time.Millisecond,
 	})
 
-	infoCollector.OnRequest(func(request *colly.Request) {
-		fmt.Println("Visiting Profile URL: ", request.URL.String())
-	})
+	infoCollector := mainCollector.Clone()
 
-	collector.OnHTML("a.lister-page-next", func(element *colly.HTMLElement) {
-		nextPage := element.Request.AbsoluteURL(element.Attr("href"))
-		collector.Visit(nextPage)
+	mainCollector.OnRequest(func(request *colly.Request) {
+		fmt.Println("Visiting birthday page: ", request.URL.String())
 	})
-
-	collector.OnHTML(".mode-detail", func(element *colly.HTMLElement) {
+	mainCollector.OnHTML(".mode-detail", func(element *colly.HTMLElement) {
 		profileHref := element.ChildAttr("div.lister-item-image > a", "href")
 		profileUrl := element.Request.AbsoluteURL(profileHref)
 		infoCollector.Visit(profileUrl)
 	})
+	mainCollector.OnHTML("a.lister-page-next", func(element *colly.HTMLElement) {
+		nextPage := element.Request.AbsoluteURL(element.Attr("href"))
+		mainCollector.Visit(nextPage)
+	})
 
+	infoCollector.OnRequest(func(request *colly.Request) {
+		fmt.Printf("Fetching profile %d: %v\n", profilesCrawled+1, request.URL.String())
+	})
 	infoCollector.OnHTML("#content-2-wide", func(element *colly.HTMLElement) {
 		profile := Profile{}
 		profile.Name = element.ChildText("h1.header > span.itemprop")
@@ -91,11 +99,13 @@ func crawl(month int, day int) {
 			log.Fatal(err)
 		}
 		fmt.Println(string(profileJson))
+
+		profilesCrawled++
+		if profilesCrawled >= profileNo {
+			panic("Exit")
+		}
 	})
 
 	birthdayUrl := fmt.Sprintf("https://www.imdb.com/search/name/?birth_monthday=%d-%d", month, day)
-	collector.Visit(birthdayUrl)
-
-	// TODO: add toggle for async mode
-	//collector.Wait()
+	mainCollector.Visit(birthdayUrl)
 }

@@ -1,6 +1,8 @@
-# Web Crawler
+# IMDB Web Crawler
 
 Web crawler for getting information on people born on a specified day from [IMDB](https://www.imdb.com/). The crawler returns information from the profiles of the people born on a specified date, where the people are sorted by popularity. Based off [Michael Okoko's blog post](https://blog.logrocket.com/web-scraping-with-go-and-colly/).
+
+Note that there is rate limiting in place as the client may be blocked if too many requests are sent.
 
 The aim of this project was to learn about Go and web scraping/crawling.
 
@@ -34,8 +36,6 @@ To get more help on how to run the program, run:
 
 ## TODO
 
+- Store result in a database, or otherwise do something with the result. Also mention what I do in the README
 - build status - CI/CD
-- You can as well go ahead and append it to an array of celebrities or store it in a database
-- add rate limiting: http://go-colly.org/docs/examples/rate_limit/
-- go through todos
 - Make repo public
