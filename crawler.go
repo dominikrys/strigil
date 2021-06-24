@@ -25,10 +25,17 @@ type Celebrity struct {
 }
 
 func main() {
-	// TODO: add something saying which args are chosen
-	month := flag.Int("month", 1, "Month to fetch birthdays for")
-	day := flag.Int("day", 1, "Day to fetch birthdays for")
+	month := flag.Int("month", 0, "Month to fetch birthdays for")
+	day := flag.Int("day", 0, "Day to fetch birthdays for")
 	flag.Parse()
+
+	if *month == 0 || *day == 0 {
+		fmt.Println("Not enough arguments provided. Usage:")
+		flag.PrintDefaults()
+		return
+	}
+
+	fmt.Printf("Fetching birthdays for Day: %d, Month: %d\n", *month, *day)
 
 	crawl(*month, *day)
 }
