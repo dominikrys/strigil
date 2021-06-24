@@ -46,12 +46,16 @@ func main() {
 func crawl(month int, day int, profileNo int) {
 	profilesCrawled := 0
 
+	// infoCollector panics when enough profiles have been fetched.
+	// We recover from the panic here to stop crawling.
+	// More info: https://github.com/gocolly/colly/issues/109#issuecomment-506995291
 	defer func() {
 		if r := recover(); r != nil {
 			fmt.Printf("Successfully crawled %d profiles. Exiting.\n", profilesCrawled)
 		}
 	}()
 
+	// Set up the collector for the birthday list
 	mainCollector := colly.NewCollector(
 		colly.AllowedDomains("imdb.com", "www.imdb.com"),
 	)
@@ -60,7 +64,8 @@ func crawl(month int, day int, profileNo int) {
 		RandomDelay: 25 * time.Millisecond,
 	})
 
-	infoCollector := mainCollector.Clone()
+	// Create a copy of the collector to initialise later
+	profileCollector := mainCollector.Clone()
 
 	mainCollector.OnRequest(func(request *colly.Request) {
 		fmt.Println("Visiting birthday page: ", request.URL.String())
@@ -68,17 +73,18 @@ func crawl(month int, day int, profileNo int) {
 	mainCollector.OnHTML(".mode-detail", func(element *colly.HTMLElement) {
 		profileHref := element.ChildAttr("div.lister-item-image > a", "href")
 		profileUrl := element.Request.AbsoluteURL(profileHref)
-		infoCollector.Visit(profileUrl)
+		profileCollector.Visit(profileUrl)
 	})
 	mainCollector.OnHTML("a.lister-page-next", func(element *colly.HTMLElement) {
 		nextPage := element.Request.AbsoluteURL(element.Attr("href"))
 		mainCollector.Visit(nextPage)
 	})
 
-	infoCollector.OnRequest(func(request *colly.Request) {
-		fmt.Printf("Fetching profile %d: %v\n", profilesCrawled+1, request.URL.String())
+	// Set up the collector for the profiles
+	profileCollector.OnRequest(func(request *colly.Request) {
+		fmt.Printf("Fetching profile %d/%d: %v\n", profilesCrawled+1, profileNo, request.URL.String())
 	})
-	infoCollector.OnHTML("#content-2-wide", func(element *colly.HTMLElement) {
+	profileCollector.OnHTML("#content-2-wide", func(element *colly.HTMLElement) {
 		profile := Profile{}
 		profile.Name = element.ChildText("h1.header > span.itemprop")
 		profile.Photo = element.ChildAttr("#name-poster", "src")
@@ -106,6 +112,7 @@ func crawl(month int, day int, profileNo int) {
 		}
 	})
 
+	// Run the crawler
 	birthdayUrl := fmt.Sprintf("https://www.imdb.com/search/name/?birth_monthday=%d-%d", month, day)
 	mainCollector.Visit(birthdayUrl)
 }
