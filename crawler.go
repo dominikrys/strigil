@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"flag"
 	"fmt"
 	"log"
 	"strings"
@@ -9,10 +10,35 @@ import (
 	"github.com/gocolly/colly"
 )
 
-func crawl() {
+type Movie struct {
+	Title string
+	Year  string
+}
+
+type Celebrity struct {
+	Name      string
+	Photo     string
+	JobTitle  string
+	BirthDate string
+	Bio       string
+	TopMovies []Movie
+}
+
+func main() {
+	// TODO: add something saying which args are chosen
+	month := flag.Int("month", 1, "Month to fetch birthdays for")
+	day := flag.Int("day", 1, "Day to fetch birthdays for")
+	flag.Parse()
+
+	crawl(*month, *day)
+}
+
+func crawl(month int, day int) {
+	// TODO: add result limit
+
 	collector := colly.NewCollector(
 		colly.AllowedDomains("imdb.com", "www.imdb.com"),
-		colly.Async(true),
+		//colly.Async(true),
 	)
 
 	infoCollector := collector.Clone()
@@ -37,45 +63,31 @@ func crawl() {
 	})
 
 	infoCollector.OnHTML("#content-2-wide", func(element *colly.HTMLElement) {
-		profile := Star{}
-		profile.Name = element.ChildText("h1.header > span.itemprop")
-		profile.Photo = element.ChildAttr("#name-poster", "src")
-		profile.JobTitle = element.ChildText("#name-job-categories > a > span.itemprop")
-		profile.BirthDate = element.ChildAttr("#name-born-info time", "datetime")
-		profile.Bio = strings.TrimSpace(element.ChildText("#name-bio-text > div.name-trivia-bio-text > div.inline"))
+		celeb := Celebrity{}
+		celeb.Name = element.ChildText("h1.header > span.itemprop")
+		celeb.Photo = element.ChildAttr("#name-poster", "src")
+		celeb.JobTitle = element.ChildText("#name-job-categories > a > span.itemprop")
+		celeb.BirthDate = element.ChildAttr("#name-born-info time", "datetime")
+		celeb.Bio = strings.TrimSpace(element.ChildText("#name-bio-text > div.name-trivia-bio-text > div.inline"))
 
 		element.ForEach("div.knownfor-title", func(_ int, knownForElem *colly.HTMLElement) {
 			movie := Movie{}
 			movie.Title = knownForElem.ChildText("div.knownfor-title-role > a.knownfor-ellipsis")
 			movie.Year = knownForElem.ChildText("div.knownfor-year > span.knownfor-ellipsis")
 
-			profile.TopMovies = append(profile.TopMovies, movie)
+			celeb.TopMovies = append(celeb.TopMovies, movie)
 		})
 
-		profileJson, err := json.MarshalIndent(profile, "", "    ")
+		celebJson, err := json.MarshalIndent(celeb, "", "    ")
 		if err != nil {
 			log.Fatal(err)
 		}
-		fmt.Println(string(profileJson))
+		fmt.Println(string(celebJson))
 	})
 
-	collector.Visit("https://www.imdb.com/search/name/?birth_monthday=12-20")
-}
+	birthdayUrl := fmt.Sprintf("https://www.imdb.com/search/name/?birth_monthday=%d-%d", month, day)
+	collector.Visit(birthdayUrl)
 
-type Movie struct {
-	Title string
-	Year  string
-}
-
-type Star struct {
-	Name      string
-	Photo     string
-	JobTitle  string
-	BirthDate string
-	Bio       string
-	TopMovies []Movie
-}
-
-func main() {
-
+	// TODO: add toggle for async mode
+	//collector.Wait()
 }
