@@ -1,5 +1,7 @@
 # IMDB Web Crawler
 
+[![Build Status](https://img.shields.io/github/workflow/status/dominikrys/web-crawler/Continuous%20Integration?style=flat-square)](https://github.com/dominikrys/web-crawler/actions)
+
 Web crawler for getting information on people born on a specified day from [IMDB](https://www.imdb.com/). The crawler returns information from the profiles of the people born on a specified date, where the people are sorted by popularity. Based off [Michael Okoko's blog post](https://blog.logrocket.com/web-scraping-with-go-and-colly/).
 
 Note that there is rate limiting in place as the client may be blocked if too many requests are sent.
