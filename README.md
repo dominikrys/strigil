@@ -36,6 +36,7 @@ To get more help on how to run the program, run:
 
 ## TODO
 
-- Store result in a database, or otherwise do something with the result. Also mention what I do in the README
 - build status - CI/CD
+- Store result in a database, or otherwise do something with the result. Also mention what I do in the README
+- add a test
 - Make repo public
