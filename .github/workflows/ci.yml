@@ -1,7 +1,13 @@
+on: [push, pull_request]
+
 name: 'Continuous Integration'
-steps:
-- uses: actions/checkout@v2
-- uses: actions/setup-go@v2
-  with:
-    go-version: '^1.16.5'
-- run: go run . --day 1 --month 2 --profileNo 2
+
+jobs:
+  run:
+    name: Run
+    steps:
+    - uses: actions/checkout@v2
+    - uses: actions/setup-go@v2
+      with:
+        go-version: '^1.16.5'
+    - run: go run . --day 1 --month 2 --profileNo 2
