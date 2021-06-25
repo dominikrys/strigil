@@ -38,7 +38,6 @@ To get more help on how to run the program, run:
 
 ## TODO
 
-- build status - CI/CD
 - Store result in a database, or otherwise do something with the result. Also mention what I do in the README
+- refactor stuff so no comments are needed
 - add a test
-- Make repo public
