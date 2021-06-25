@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"flag"
 	"fmt"
@@ -10,6 +11,9 @@ import (
 	"time"
 
 	"github.com/gocolly/colly"
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
+	"go.mongodb.org/mongo-driver/mongo/readpref"
 )
 
 type Movie struct {
@@ -27,6 +31,27 @@ type Profile struct {
 }
 
 func main() {
+	// Connect to MongoDB database
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+	client, err := mongo.Connect(ctx, options.Client().ApplyURI("mongodb://localhost:27017"))
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	defer func() {
+		if err = client.Disconnect(ctx); err != nil {
+			panic(err)
+		}
+	}()
+
+	// Check if the database is connected
+	err = client.Ping(ctx, readpref.Primary())
+	if err != nil {
+		log.Fatal("Couldn't connect to MongoDB: ", err)
+	}
+	fmt.Println("Successfully connected to MongoDB")
+
 	month := flag.Int("month", 0, "Month to fetch birthdays for")
 	day := flag.Int("day", 0, "Day to fetch birthdays for")
 	profileNo := flag.Int("profileNo", 5, "(Optional) Amount of profiles to fetch")
