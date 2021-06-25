@@ -39,5 +39,8 @@ To get more help on how to run the program, run:
 ## TODO
 
 - Store result in a database, or otherwise do something with the result. Also mention what I do in the README
+  - Mention how to run MongoDB instance
+  - Tweak CI job to make this work. May possibly need some tweaking?
+- Reflect repo headline with mongodb
 - refactor stuff so no comments are needed
 - add a test

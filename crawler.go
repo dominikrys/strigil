@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/gocolly/colly"
+	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.mongodb.org/mongo-driver/mongo/readpref"
@@ -65,10 +66,10 @@ func main() {
 
 	fmt.Printf("Fetching %d profiles for people born on Day: %d, Month: %d\n", *profileNo, *day, *month)
 
-	crawl(*month, *day, *profileNo)
+	crawl(*month, *day, *profileNo, *client)
 }
 
-func crawl(month int, day int, profileNo int) {
+func crawl(month int, day int, profileNo int, client mongo.Client) {
 	profilesCrawled := 0
 
 	// infoCollector panics when enough profiles have been fetched.
@@ -130,6 +131,20 @@ func crawl(month int, day int, profileNo int) {
 			log.Fatal(err)
 		}
 		fmt.Println(string(profileJson))
+
+		profileBson, err := bson.Marshal(profile)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+		defer cancel()
+		collection := client.Database("crawler").Collection("profiles")
+		insertRes, err := collection.InsertOne(ctx, profileBson)
+		if err != nil {
+			log.Fatal(err)
+		}
+		fmt.Printf("Wrote profile to MongoDB: %v\n", insertRes.InsertedID)
 
 		profilesCrawled++
 		if profilesCrawled >= profileNo {
