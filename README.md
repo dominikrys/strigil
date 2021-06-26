@@ -2,7 +2,7 @@
 
 [![Build Status](https://img.shields.io/github/workflow/status/dominikrys/web-crawler/Continuous%20Integration?style=flat-square)](https://github.com/dominikrys/web-crawler/actions)
 
-Web crawler for getting information on people born on a specified day from [IMDB](https://www.imdb.com/). The crawler returns information from the profiles of the people born on a specified date, where the people are sorted by popularity. Based off [Michael Okoko's blog post](https://blog.logrocket.com/web-scraping-with-go-and-colly/).
+Web crawler for fetching information of people born on a specified day from [IMDB](https://www.imdb.com/), which is written to a MongoDB database. Information from the most popular x profiles if fetched. The crawler part is based off [Michael Okoko's blog post](https://blog.logrocket.com/web-scraping-with-go-and-colly/).
 
 Note that there is rate limiting in place as the client may be blocked if too many requests are sent.
 
@@ -18,10 +18,18 @@ To compile, run:
 go build ./crawler.go
 ```
 
-Then, to run the program:
+Before running the program, run a [MongoDB](https://www.mongodb.com/) instance on port `27017`. This can be easily done using [Docker](https://www.docker.com/):
 
 ```bash
-./crawler.go --day <day of birthday> --month <month of birthday>
+docker run --name mongo -p 27017:27017 -d mongo:4.4.6
+```
+
+Note that if MongoDB is not running the crawler will still work, but writing to MongoDB will be disabled. The crawler will write to the `profiles` collection in the `crawler` database. These will be created by the crawler if they don't already exist.
+
+Then, run the crawler:
+
+```bash
+./crawler.go --day <day of birthday> --month <month of birthday> [--profileNo <number of profiles to fetch>] [--mongoUri <MongoDB URI>]
 ```
 
 Alternatively, for development, `go run` can be used:
@@ -30,7 +38,7 @@ Alternatively, for development, `go run` can be used:
 go run . --day <day of birthday> --month <month of birthday>
 ```
 
-To get more help on how to run the program, run:
+To get more help on how to run the program and to check the program defaults, run:
 
 ```bash
 ./crawler --help
@@ -38,6 +46,6 @@ To get more help on how to run the program, run:
 
 ## TODO
 
-- Store result in a database, or otherwise do something with the result. Also mention what I do in the README
-- refactor stuff so no comments are needed
-- add a test
+- Merge db branch
+- refactor stuff so less comments are needed
+- add a test?

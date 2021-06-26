@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/gocolly/colly"
+	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.mongodb.org/mongo-driver/mongo/readpref"
@@ -31,30 +32,11 @@ type Profile struct {
 }
 
 func main() {
-	// Connect to MongoDB database
-	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
-	defer cancel()
-	client, err := mongo.Connect(ctx, options.Client().ApplyURI("mongodb://localhost:27017"))
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	defer func() {
-		if err = client.Disconnect(ctx); err != nil {
-			panic(err)
-		}
-	}()
-
-	// Check if the database is connected
-	err = client.Ping(ctx, readpref.Primary())
-	if err != nil {
-		log.Fatal("Couldn't connect to MongoDB: ", err)
-	}
-	fmt.Println("Successfully connected to MongoDB")
-
+	// Parse arguments
 	month := flag.Int("month", 0, "Month to fetch birthdays for")
 	day := flag.Int("day", 0, "Day to fetch birthdays for")
 	profileNo := flag.Int("profileNo", 5, "(Optional) Amount of profiles to fetch")
+	mongoUri := flag.String("mongoUri", "mongodb://localhost:27017", "(Optional) MongoDB URI")
 	flag.Parse()
 
 	if *month == 0 || *day == 0 {
@@ -65,10 +47,35 @@ func main() {
 
 	fmt.Printf("Fetching %d profiles for people born on Day: %d, Month: %d\n", *profileNo, *day, *month)
 
-	crawl(*month, *day, *profileNo)
+	// Connect to MongoDB database
+	usingMongo := true
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+	mongoClient, err := mongo.Connect(ctx, options.Client().ApplyURI(*mongoUri))
+	if err != nil {
+		log.Println("MongoDB support disabled - couldn't connect:", err)
+		usingMongo = false
+	} else {
+		defer func() {
+			if err = mongoClient.Disconnect(ctx); err != nil {
+				panic(err)
+			}
+		}()
+
+		// Check if the database is connected
+		err = mongoClient.Ping(ctx, readpref.Primary())
+		if err != nil {
+			log.Println("MongoDB support disabled - couldn't ping database:", err)
+			usingMongo = false
+		} else {
+			fmt.Println("Successfully connected to MongoDB on", *mongoUri)
+		}
+	}
+
+	crawl(*month, *day, *profileNo, *mongoClient, usingMongo)
 }
 
-func crawl(month int, day int, profileNo int) {
+func crawl(month int, day int, profileNo int, mongoClient mongo.Client, usingMongo bool) {
 	profilesCrawled := 0
 
 	// infoCollector panics when enough profiles have been fetched.
@@ -93,7 +100,7 @@ func crawl(month int, day int, profileNo int) {
 	profileCollector := mainCollector.Clone()
 
 	mainCollector.OnRequest(func(request *colly.Request) {
-		fmt.Println("Visiting birthday page: ", request.URL.String())
+		fmt.Println("Visiting birthday page:", request.URL.String())
 	})
 	mainCollector.OnHTML(".mode-detail", func(element *colly.HTMLElement) {
 		profileHref := element.ChildAttr("div.lister-item-image > a", "href")
@@ -110,6 +117,14 @@ func crawl(month int, day int, profileNo int) {
 		fmt.Printf("Fetching profile %d/%d: %v\n", profilesCrawled+1, profileNo, request.URL.String())
 	})
 	profileCollector.OnHTML("#content-2-wide", func(element *colly.HTMLElement) {
+		defer func() {
+			// Check if enough profiles have been fetched
+			profilesCrawled++
+			if profilesCrawled >= profileNo {
+				panic("Exit")
+			}
+		}()
+
 		profile := Profile{}
 		profile.Name = element.ChildText("h1.header > span.itemprop")
 		profile.Photo = element.ChildAttr("#name-poster", "src")
@@ -125,15 +140,38 @@ func crawl(month int, day int, profileNo int) {
 			profile.TopMovies = append(profile.TopMovies, movie)
 		})
 
+		// Print JSON to console
 		profileJson, err := json.MarshalIndent(profile, "", "    ")
 		if err != nil {
 			log.Fatal(err)
 		}
 		fmt.Println(string(profileJson))
 
-		profilesCrawled++
-		if profilesCrawled >= profileNo {
-			panic("Exit")
+		if !usingMongo {
+			return
+		}
+
+		// Create BSON for MongoDB
+		profileBson, err := bson.Marshal(profile)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		// Write profile to database
+		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+		defer cancel()
+		collection := mongoClient.Database("crawler").Collection("profiles")
+		countRes, err := collection.CountDocuments(ctx, profileBson)
+		if err != nil {
+			log.Fatal(err)
+		} else if countRes > 0 {
+			fmt.Println("Profile already exists in the database, skipping")
+		} else {
+			insertRes, err := collection.InsertOne(ctx, profileBson)
+			if err != nil {
+				log.Fatal(err)
+			}
+			fmt.Printf("Wrote profile to database: %v\n", insertRes.InsertedID)
 		}
 	})
 
