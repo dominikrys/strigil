@@ -48,7 +48,7 @@ func main() {
 
 	mongoClient, usingMongo := connectToMongo(*mongoUri)
 	if usingMongo {
-		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 		defer cancel()
 
 		defer func() {
@@ -63,15 +63,14 @@ func main() {
 
 func connectToMongo(mongoUri string) (mongoClient *mongo.Client, usingMongo bool) {
 	usingMongo = true
-	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 	mongoClient, err := mongo.Connect(ctx, options.Client().ApplyURI(mongoUri))
 	if err != nil {
 		log.Println("MongoDB support disabled - couldn't connect:", err)
 		usingMongo = false
 	} else {
-		err = mongoClient.Ping(ctx, readpref.Primary())
-		if err != nil {
+		if err = mongoClient.Ping(ctx, readpref.Primary()); err != nil {
 			log.Println("MongoDB support disabled - couldn't ping database:", err)
 			usingMongo = false
 		} else {
@@ -164,7 +163,7 @@ func crawl(month int, day int, profileNo int, mongoClient mongo.Client, usingMon
 		}
 
 		// Write profile to database
-		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 		defer cancel()
 		collection := mongoClient.Database("crawler").Collection("profiles")
 		countRes, err := collection.CountDocuments(ctx, profileBson)
