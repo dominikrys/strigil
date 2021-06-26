@@ -24,7 +24,7 @@ Before running the program, run a [MongoDB](https://www.mongodb.com/) instance o
 docker run --name mongo -p 27017:27017 -d mongo:4.4.6
 ```
 
-Note that if MongoDB is not running the crawler will still work, but writing to MongoDB will be disabled.
+Note that if MongoDB is not running the crawler will still work, but writing to MongoDB will be disabled. The crawler will write to the `profiles` collection in the `crawler` database. These will be created by the crawler if they don't already exist.
 
 Then, run the crawler:
 
@@ -46,7 +46,6 @@ To get more help on how to run the program and to check the program defaults, ru
 
 ## TODO
 
-- Specify MongoDB collection and database + mention in README
 - Merge db branch
 - refactor stuff so less comments are needed
 - add a test?
