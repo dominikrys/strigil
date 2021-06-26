@@ -32,6 +32,20 @@ type Profile struct {
 }
 
 func main() {
+	// Parse arguments
+	month := flag.Int("month", 0, "Month to fetch birthdays for")
+	day := flag.Int("day", 0, "Day to fetch birthdays for")
+	profileNo := flag.Int("profileNo", 5, "(Optional) Amount of profiles to fetch")
+	flag.Parse()
+
+	if *month == 0 || *day == 0 {
+		fmt.Println("Not enough arguments provided. Usage:")
+		flag.PrintDefaults()
+		os.Exit(1)
+	}
+
+	fmt.Printf("Fetching %d profiles for people born on Day: %d, Month: %d\n", *profileNo, *day, *month)
+
 	// Connect to MongoDB database
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
@@ -52,20 +66,6 @@ func main() {
 		log.Fatal("Couldn't connect to MongoDB: ", err)
 	}
 	fmt.Println("Successfully connected to MongoDB")
-
-	// Parse arguments
-	month := flag.Int("month", 0, "Month to fetch birthdays for")
-	day := flag.Int("day", 0, "Day to fetch birthdays for")
-	profileNo := flag.Int("profileNo", 5, "(Optional) Amount of profiles to fetch")
-	flag.Parse()
-
-	if *month == 0 || *day == 0 {
-		fmt.Println("Not enough arguments provided. Usage:")
-		flag.PrintDefaults()
-		os.Exit(1)
-	}
-
-	fmt.Printf("Fetching %d profiles for people born on Day: %d, Month: %d\n", *profileNo, *day, *month)
 
 	crawl(*month, *day, *profileNo, *client)
 }

@@ -16,7 +16,7 @@ jobs:
           go-version: '^1.16.5'
       
       - name: Run MongoDB in Docker
-        run: docker run --name mongo -p 27017:27017 -d mongo:latest
+        run: docker run --name mongo -p 27017:27017 -d mongo:4.4.6
 
       - name: Run crawler
         run: go run . --day 1 --month 2 --profileNo 2

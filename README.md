@@ -18,7 +18,13 @@ To compile, run:
 go build ./crawler.go
 ```
 
-Then, to run the program:
+Before running the program, run a [MongoDB](https://www.mongodb.com/) instance on port `27017`. This can be easily done using [Docker](https://www.docker.com/):
+
+```bash
+docker run --name mongo -p 27017:27017 -d mongo:4.4.6
+```
+
+Then, run the crawler:
 
 ```bash
 ./crawler.go --day <day of birthday> --month <month of birthday> [--profileNo <number of profiles to fetch>]
@@ -39,9 +45,8 @@ To get more help on how to run the program, run:
 ## TODO
 
 - Mention how to run MongoDB instance
-- Tweak CI job to make this work. May possibly need some tweaking?
-  - Optional writing to mongodb? Specify mongodb address? Optional JSON output?
-  - Mention what collection and database the data is written to
-- Reflect repo headline with mongodb
+- Optional writing to mongodb? If MongoDB fails, just don't use MongoDB? Specify mongodb address? Specify mongodb collection and database? Optional JSON output?
+- Mention what collection and database the data is written to
+- Merge db branch
 - refactor stuff so no comments are needed
 - add a test?
