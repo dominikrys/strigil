@@ -29,16 +29,16 @@ Note that if MongoDB is not running the crawler will still work, but writing to 
 Then, run the crawler:
 
 ```bash
-./crawler.go --day <day of birthday> --month <month of birthday> [--profileNo <number of profiles to fetch>]
+./crawler.go --day <day of birthday> --month <month of birthday> [--profileNo <number of profiles to fetch>] [--mongoUri <MongoDB URI>]
 ```
 
 Alternatively, for development, `go run` can be used:
 
 ```bash
-go run . --day <day of birthday> --month <month of birthday> [--profileNo <number of profiles to fetch>]
+go run . --day <day of birthday> --month <month of birthday>
 ```
 
-To get more help on how to run the program, run:
+To get more help on how to run the program and to check the program defaults, run:
 
 ```bash
 ./crawler --help
@@ -46,7 +46,6 @@ To get more help on how to run the program, run:
 
 ## TODO
 
-- Specify MongoDB port + reflect in messages
 - Specify MongoDB collection and database + mention in README
 - Merge db branch
 - refactor stuff so less comments are needed

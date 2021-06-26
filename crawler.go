@@ -36,6 +36,7 @@ func main() {
 	month := flag.Int("month", 0, "Month to fetch birthdays for")
 	day := flag.Int("day", 0, "Day to fetch birthdays for")
 	profileNo := flag.Int("profileNo", 5, "(Optional) Amount of profiles to fetch")
+	mongoUri := flag.String("mongoUri", "mongodb://localhost:27017", "(Optional) MongoDB URI")
 	flag.Parse()
 
 	if *month == 0 || *day == 0 {
@@ -50,9 +51,9 @@ func main() {
 	usingMongo := true
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
-	mongoClient, err := mongo.Connect(ctx, options.Client().ApplyURI("mongodb://localhost:27017"))
+	mongoClient, err := mongo.Connect(ctx, options.Client().ApplyURI(*mongoUri))
 	if err != nil {
-		log.Println("MongoDB support disabled - couldn't connect: ", err)
+		log.Println("MongoDB support disabled - couldn't connect:", err)
 		usingMongo = false
 	} else {
 		defer func() {
@@ -64,11 +65,11 @@ func main() {
 		// Check if the database is connected
 		err = mongoClient.Ping(ctx, readpref.Primary())
 		if err != nil {
-			log.Println("MongoDB support disabled - couldn't ping database: ", err)
+			log.Println("MongoDB support disabled - couldn't ping database:", err)
 			usingMongo = false
+		} else {
+			fmt.Println("Successfully connected to MongoDB on", *mongoUri)
 		}
-
-		fmt.Println("Successfully connected to MongoDB")
 	}
 
 	crawl(*month, *day, *profileNo, *mongoClient, usingMongo)
@@ -99,7 +100,7 @@ func crawl(month int, day int, profileNo int, mongoClient mongo.Client, usingMon
 	profileCollector := mainCollector.Clone()
 
 	mainCollector.OnRequest(func(request *colly.Request) {
-		fmt.Println("Visiting birthday page: ", request.URL.String())
+		fmt.Println("Visiting birthday page:", request.URL.String())
 	})
 	mainCollector.OnHTML(".mode-detail", func(element *colly.HTMLElement) {
 		profileHref := element.ChildAttr("div.lister-item-image > a", "href")
@@ -164,7 +165,7 @@ func crawl(month int, day int, profileNo int, mongoClient mongo.Client, usingMon
 		if err != nil {
 			log.Fatal(err)
 		} else if countRes > 0 {
-			fmt.Println("Profile already in database, skipping")
+			fmt.Println("Profile already exists in the database, skipping")
 		} else {
 			insertRes, err := collection.InsertOne(ctx, profileBson)
 			if err != nil {
