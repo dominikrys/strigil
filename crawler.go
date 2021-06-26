@@ -32,7 +32,6 @@ type Profile struct {
 }
 
 func main() {
-	// Parse arguments
 	month := flag.Int("month", 0, "Month to fetch birthdays for")
 	day := flag.Int("day", 0, "Day to fetch birthdays for")
 	profileNo := flag.Int("profileNo", 5, "(Optional) Amount of profiles to fetch")
@@ -47,39 +46,46 @@ func main() {
 
 	fmt.Printf("Fetching %d profiles for people born on Day: %d, Month: %d\n", *profileNo, *day, *month)
 
-	// Connect to MongoDB database
-	usingMongo := true
-	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
-	defer cancel()
-	mongoClient, err := mongo.Connect(ctx, options.Client().ApplyURI(*mongoUri))
-	if err != nil {
-		log.Println("MongoDB support disabled - couldn't connect:", err)
-		usingMongo = false
-	} else {
+	mongoClient, usingMongo := connectToMongo(*mongoUri)
+	if usingMongo {
+		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+		defer cancel()
+
 		defer func() {
-			if err = mongoClient.Disconnect(ctx); err != nil {
+			if err := mongoClient.Disconnect(ctx); err != nil {
 				panic(err)
 			}
 		}()
-
-		// Check if the database is connected
-		err = mongoClient.Ping(ctx, readpref.Primary())
-		if err != nil {
-			log.Println("MongoDB support disabled - couldn't ping database:", err)
-			usingMongo = false
-		} else {
-			fmt.Println("Successfully connected to MongoDB on", *mongoUri)
-		}
 	}
 
 	crawl(*month, *day, *profileNo, *mongoClient, usingMongo)
 }
 
+func connectToMongo(mongoUri string) (mongoClient *mongo.Client, usingMongo bool) {
+	usingMongo = true
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+	mongoClient, err := mongo.Connect(ctx, options.Client().ApplyURI(mongoUri))
+	if err != nil {
+		log.Println("MongoDB support disabled - couldn't connect:", err)
+		usingMongo = false
+	} else {
+		err = mongoClient.Ping(ctx, readpref.Primary())
+		if err != nil {
+			log.Println("MongoDB support disabled - couldn't ping database:", err)
+			usingMongo = false
+		} else {
+			fmt.Println("Successfully connected to MongoDB on:", mongoUri)
+		}
+	}
+
+	return
+}
+
 func crawl(month int, day int, profileNo int, mongoClient mongo.Client, usingMongo bool) {
 	profilesCrawled := 0
 
-	// infoCollector panics when enough profiles have been fetched.
-	// We recover from the panic here to stop crawling.
+	// infoCollector panics when enough profiles have been fetched. We recover from the panic here to stop crawling.
 	// More info: https://github.com/gocolly/colly/issues/109#issuecomment-506995291
 	defer func() {
 		if r := recover(); r != nil {

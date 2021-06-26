@@ -46,6 +46,4 @@ To get more help on how to run the program and to check the program defaults, ru
 
 ## TODO
 
-- Merge db branch
-- refactor stuff so less comments are needed
 - add a test?
