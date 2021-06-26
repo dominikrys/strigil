@@ -53,6 +53,7 @@ func main() {
 	}
 	fmt.Println("Successfully connected to MongoDB")
 
+	// Parse arguments
 	month := flag.Int("month", 0, "Month to fetch birthdays for")
 	day := flag.Int("day", 0, "Day to fetch birthdays for")
 	profileNo := flag.Int("profileNo", 5, "(Optional) Amount of profiles to fetch")
@@ -156,7 +157,7 @@ func crawl(month int, day int, profileNo int, client mongo.Client) {
 			fmt.Printf("Wrote profile to database: %v\n", insertRes.InsertedID)
 		}
 
-		// Check if enough profiles have been crawled
+		// Check if enough profiles have been fetched
 		profilesCrawled++
 		if profilesCrawled >= profileNo {
 			panic("Exit")
