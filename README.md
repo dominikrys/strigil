@@ -44,6 +44,10 @@ To get more help on how to run the program and to check the program defaults, ru
 ./crawler --help
 ```
 
-## TODO
+## Running tests
 
-- add a test?
+Make sure you have a MongoDB instance running as described above. Then, run:
+
+```bash
+go test
+```

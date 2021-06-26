@@ -19,4 +19,4 @@ jobs:
         run: docker run --name mongo -p 27017:27017 -d mongo:4.4.6
 
       - name: Run crawler
-        run: go run . --day 1 --month 2 --profileNo 2
+        run: go run . --day 1 --month 2 --profileNo 3
