@@ -24,6 +24,8 @@ Before running the program, run a [MongoDB](https://www.mongodb.com/) instance o
 docker run --name mongo -p 27017:27017 -d mongo:4.4.6
 ```
 
+Note that if MongoDB is not running the crawler will still work, but writing to MongoDB will be disabled.
+
 Then, run the crawler:
 
 ```bash
@@ -44,9 +46,8 @@ To get more help on how to run the program, run:
 
 ## TODO
 
-- Mention how to run MongoDB instance
-- Optional writing to mongodb? If MongoDB fails, just don't use MongoDB? Specify mongodb address? Specify mongodb collection and database? Optional JSON output?
-- Mention what collection and database the data is written to
+- Specify MongoDB port + reflect in messages
+- Specify MongoDB collection and database + mention in README
 - Merge db branch
-- refactor stuff so no comments are needed
+- refactor stuff so less comments are needed
 - add a test?
