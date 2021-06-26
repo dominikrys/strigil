@@ -126,26 +126,37 @@ func crawl(month int, day int, profileNo int, client mongo.Client) {
 			profile.TopMovies = append(profile.TopMovies, movie)
 		})
 
+		// Print JSON to console
 		profileJson, err := json.MarshalIndent(profile, "", "    ")
 		if err != nil {
 			log.Fatal(err)
 		}
 		fmt.Println(string(profileJson))
 
+		// Create BSON for MongoDB
 		profileBson, err := bson.Marshal(profile)
 		if err != nil {
 			log.Fatal(err)
 		}
 
+		// Write profile to database
 		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 		defer cancel()
 		collection := client.Database("crawler").Collection("profiles")
-		insertRes, err := collection.InsertOne(ctx, profileBson)
+		countRes, err := collection.CountDocuments(ctx, profileBson)
 		if err != nil {
 			log.Fatal(err)
+		} else if countRes > 0 {
+			fmt.Println("Profile already in database, skipping")
+		} else {
+			insertRes, err := collection.InsertOne(ctx, profileBson)
+			if err != nil {
+				log.Fatal(err)
+			}
+			fmt.Printf("Wrote profile to database: %v\n", insertRes.InsertedID)
 		}
-		fmt.Printf("Wrote profile to MongoDB: %v\n", insertRes.InsertedID)
 
+		// Check if enough profiles have been crawled
 		profilesCrawled++
 		if profilesCrawled >= profileNo {
 			panic("Exit")
