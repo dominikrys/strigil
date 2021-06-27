@@ -8,6 +8,10 @@ Note that there is rate limiting in place as the client may be blocked if too ma
 
 The aim of this project was to learn about Go and web scraping/crawling.
 
+## Demo
+
+[![asciicast](https://asciinema.org/a/422531.svg)](https://asciinema.org/a/422531)
+
 ## Build and Run Instructions
 
 Make sure [Go](https://golang.org/) is installed.
